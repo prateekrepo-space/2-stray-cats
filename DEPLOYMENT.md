@@ -1,130 +1,91 @@
-# 2 Stray Cats — AWS Deployment Setup Guide
+# 2 Stray Cats — AWS Amplify Deployment Guide
 
-Follow these steps once in the AWS console + GitHub to wire everything up.
+## What AWS Amplify Does Automatically
+
+Once connected to GitHub, Amplify:
+- Watches your branches for any new push/merge
+- Runs the build (`npm ci` + `npm run build`) on its own servers
+- Deploys to a global CDN with HTTPS automatically
+- No GitHub Actions, no servers, no manual steps
 
 ---
 
-## Step 1 — Create Two Amplify Apps
+## One-Time Setup (~15 minutes)
 
-1. Go to → **AWS Console** → **AWS Amplify** → **New App → Host Web App**
-2. Connect your **GitHub repo** → Select branch **`test`** → App name: `2cat-test`
-3. Build settings — use these:
-   ```yaml
-   version: 1
-   frontend:
-     phases:
-       preBuild:
-         commands:
-           - npm ci
-       build:
-         commands:
-           - npm run build
-     artifacts:
-       baseDirectory: .next
-       files:
-         - '**/*'
-     cache:
-       paths:
-         - node_modules/**/*
+### Step 1 — Open AWS Amplify Console
+
+Go to: https://ap-south-1.console.aws.amazon.com/amplify/home
+
+---
+
+### Step 2 — Create Testing Environment
+
+1. Click **"New App" → "Host Web App"**
+2. Select **GitHub** → Authorize AWS Amplify
+3. Repository: `prateekrepo-space/2-stray-cats`
+4. Branch: **`test`**
+5. App name: `2cat-test`
+6. Build settings: Amplify will auto-detect `amplify.yml` ✅
+7. Environment variables (click "Advanced"):
    ```
-4. Repeat for branch **`main`** → App name: `2cat-prod`
-5. Note down both **App IDs** (e.g. `d3abc123xyz`)
+   NEXT_PUBLIC_ENV = testing
+   ```
+8. Click **Save and Deploy**
+9. Your Testing URL will be: `https://test.XXXX.amplifyapp.com`
 
 ---
 
-## Step 2 — Create IAM OIDC Role for GitHub Actions (No long-lived keys)
+### Step 3 — Create Production Environment
 
-1. **AWS Console** → **IAM** → **Identity Providers** → **Add Provider**
-   - Provider type: **OpenID Connect**
-   - Provider URL: `https://token.actions.githubusercontent.com`
-   - Audience: `sts.amazonaws.com`
+1. Click **"New App" → "Host Web App"** again
+2. Repository: `prateekrepo-space/2-stray-cats`
+3. Branch: **`main`**
+4. App name: `2cat-prod`
+5. Environment variables:
+   ```
+   NEXT_PUBLIC_ENV = production
+   ```
+6. Click **Save and Deploy**
+7. Your Production URL will be: `https://main.XXXX.amplifyapp.com`
 
-2. **IAM** → **Roles** → **Create Role**
-   - Trusted entity: **Web identity** → Select the OIDC provider above
-   - Condition: `token.actions.githubusercontent.com:sub` = `repo:YOUR_GITHUB_USERNAME/2cat:*`
-   - Attach policy: `AdministratorAccess-Amplify` (or custom policy below)
-   - Role name: `github-actions-deploy`
-   - Copy the **Role ARN** (e.g. `arn:aws:iam::123456789:role/github-actions-deploy`)
+---
 
-### Minimum IAM Policy (Recommended over Admin)
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "amplify:StartJob",
-        "amplify:GetJob",
-        "amplify:ListJobs"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
+## Your Daily Workflow After Setup
+
 ```
-
----
-
-## Step 3 — Add GitHub Secrets
-
-Go to → **GitHub Repo** → **Settings** → **Secrets and Variables** → **Actions** → **New Repository Secret**
-
-| Secret Name           | Value                                  |
-|-----------------------|----------------------------------------|
-| `AWS_ACCOUNT_ID`      | Your 12-digit AWS Account ID           |
-| `AMPLIFY_APP_ID_TEST` | App ID from the `2cat-test` Amplify app |
-| `AMPLIFY_APP_ID_PROD` | App ID from the `2cat-prod` Amplify app |
-
----
-
-## Step 4 — Create `test` Branch
-
-```bash
-git checkout main
-git checkout -b test
-git push origin test
-```
-
----
-
-## Step 5 — Protect Branches (Recommended)
-
-Go to → **GitHub Repo** → **Settings** → **Branches** → **Add Rule**
-
-For `main`:
-- ✅ Require a pull request before merging
-- ✅ Require status checks to pass (add `deploy` job)
-- ✅ Do not allow bypassing
-
-For `test`:
-- ✅ Require a pull request before merging
-
----
-
-## Step 6 — Your Daily Workflow
-
-```bash
-# Start a new feature
+# Work on a feature
 git checkout test
-git checkout -b feature/my-new-feature
+git checkout -b feature/my-feature
 
-# Work, commit, push
-git push origin feature/my-new-feature
+# Make changes, then push
+git add .
+git commit -m "feat: my new feature"
+git push origin feature/my-feature
 
-# Open PR: feature/my-new-feature → test
-# → GitHub Actions auto-runs test.yaml → Testing site updated
+# Open PR on GitHub: feature/my-feature → test
+# Merge PR → Amplify auto-builds & deploys to Testing ✅
 
-# After verifying on Testing:
-# Open PR: test → main
-# → GitHub Actions auto-runs prod.yaml → Production site updated
+# Verify on Testing URL
+# Open PR on GitHub: test → main
+# Merge PR → Amplify auto-builds & deploys to Production ✅
 ```
 
 ---
 
-## Deployed URLs
+## What Triggers Auto-Deploy
 
-| Environment | URL                                          |
-|-------------|----------------------------------------------|
-| Testing     | `https://test.YOUR_APP_ID.amplifyapp.com`   |
-| Production  | `https://2straycats.amplifyapp.com`         |
+| Event                    | Environment  |
+|--------------------------|--------------|
+| Push / Merge to `test`   | Testing      |
+| Push / Merge to `main`   | Production   |
+
+## Amplify Free Tier Limits
+
+| Resource                | Free Tier         |
+|-------------------------|-------------------|
+| Build minutes           | 1,000 min/month   |
+| Data served             | 15 GB/month       |
+| Requests                | 500,000/month     |
+| Storage                 | 5 GB              |
+
+> Your 2.2 MB pixel scene site will comfortably stay in the free tier.
