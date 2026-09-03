@@ -1,0 +1,20 @@
+{
+  "name": "2cat-infra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-amplify-alpha": "^2.268.0-alpha.0",
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.100.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}

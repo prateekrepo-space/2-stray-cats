@@ -1,0 +1,40 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: ap-south-1
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "Installing CDK tools..."
+      - npm install -g aws-cdk ts-node typescript
+      - cd infra && npm install
+
+  pre_build:
+    commands:
+      - echo "Deploying CDK infrastructure..."
+      - cd infra && cdk deploy --require-approval never
+      - cd ..
+
+  build:
+    commands:
+      - echo "Building Next.js static export..."
+      - npm ci
+      - npm run build
+      # Next.js static export output lands in ./out/
+      - echo "Syncing to S3..."
+      - aws s3 sync out/ s3://$S3_BUCKET/ --delete --region $AWS_REGION
+
+  post_build:
+    commands:
+      - echo "Invalidating CloudFront cache..."
+      - aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths "/*"
+      - echo "Deployment complete!"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: out
