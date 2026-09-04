@@ -28,7 +28,8 @@ export const InteractivePixelCanvas: React.FC<InteractivePixelCanvasProps> = ({
 
     const loadCanvas = async () => {
       try {
-        const res = await fetch('/data/bedroomScene.bin');
+        // Cache-busting fetch to ensure fresh clean binary is loaded
+        const res = await fetch('/data/bedroomScene.bin?v=' + Date.now());
         if (!res.ok) throw new Error('Scene buffer fetch failed');
         const buffer = await res.arrayBuffer();
 
@@ -40,9 +41,7 @@ export const InteractivePixelCanvas: React.FC<InteractivePixelCanvasProps> = ({
 
         ctx.imageSmoothingEnabled = false;
 
-        // Draw native 1024x559 scene pixels
-        // Note: tagline 'little corner of the internet' is pre-baked
-        // into bedroomScene.bin by the Python pixel reconstructor pipeline
+        // Draw clean 1024x559 scene pixels (no text)
         const u8 = new Uint8ClampedArray(buffer);
         const imgData = new ImageData(u8, 1024, 559);
         ctx.putImageData(imgData, 0, 0);
