@@ -40,23 +40,12 @@ export const InteractivePixelCanvas: React.FC<InteractivePixelCanvasProps> = ({
 
         ctx.imageSmoothingEnabled = false;
 
-        // 1. Draw native 1024x559 room pixels
+        // Draw native 1024x559 scene pixels
+        // Note: tagline 'little corner of the internet' is pre-baked
+        // into bedroomScene.bin by the Python pixel reconstructor pipeline
         const u8 = new Uint8ClampedArray(buffer);
         const imgData = new ImageData(u8, 1024, 559);
         ctx.putImageData(imgData, 0, 0);
-
-        // 2. Inscribe 'little corner of the internet' directly onto the canvas wooden panel
-        ctx.font = '8px "Press Start 2P", monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Drop shadow for engraved depth
-        ctx.fillStyle = 'rgba(10, 8, 6, 0.85)';
-        ctx.fillText('little corner of the internet', 486, 413);
-
-        // Warm wood pigment
-        ctx.fillStyle = '#cda16e';
-        ctx.fillText('little corner of the internet', 485, 412);
 
         setIsSceneRendered(true);
       } catch (err) {
